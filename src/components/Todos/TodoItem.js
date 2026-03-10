@@ -61,4 +61,4 @@ const TodoItem = (props) => {
   );
 };
 
-export default TodoItem;
+export default React.memo(TodoItem);
