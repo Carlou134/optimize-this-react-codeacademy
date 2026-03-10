@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useMemo } from 'react';
 import useToggle from '../../hooks/useToggle';
 import { ProfileContext } from '../../providers/ProfileProvider';
 import { checkUsernameValidity } from './checkUsernameValidity.js';
@@ -26,7 +26,9 @@ const Profile = () => {
     load();
   }, []);
 
-  const isUsernameValid = checkUsernameValidity(name);
+  const isUsernameValid = useMemo(() => {
+    return checkUsernameValidity(username)
+  }, [username]);
 
   const onSaveProfile = (e) => {
     e.preventDefault();
