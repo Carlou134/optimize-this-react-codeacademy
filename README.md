@@ -1,70 +1,52 @@
-# Getting Started with Create React App
+# Optimize This!
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+> A React todo app deliberately built with common performance pitfalls, then fixed step by step — a Codecademy performance-optimization exercise.
 
-## Available Scripts
+![demo](docs/screenshots/demo.png)
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## 🧩 Problem / Context
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+This project started from Codecademy's "Optimize This!" starter code: a small todo app that renders 500 items and is, on purpose, full of classic React performance mistakes (unmemoized callbacks, unnecessary re-renders, an eagerly-loaded bundle). The goal was to profile the app, find the bottlenecks, and fix them one commit at a time without changing behavior.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+## 🛠️ Stack
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+| Layer           | Technology                    |
+|------------------|--------------------------------|
+| Frontend         | React 18, Create React App (react-scripts 5) |
+| State management | React Context + `useReducer`  |
+| Testing          | React Testing Library, Jest    |
+| Package manager  | pnpm                           |
 
-### `npm run build`
+---
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 🏗️ Architecture
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- `Todos` owns the list state via `useReducer` (`add` / `update` / `delete`), while `ProfileProvider` and `PartyProvider` expose the current user and the "animations enabled" flag through Context.
+- `TodoItem` is the item renderer for a 500-row list, so it's the component most sensitive to re-renders.
+- `Confetti` (celebration animation) and the profile's icon picker are split out of the main bundle and loaded on demand.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+---
 
-### `npm run eject`
+## 🧠 Technical challenges & decisions
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+- **Problem:** every keystroke in the "new todo" input re-rendered all 500 `TodoItem` rows. → **Solution:** wrapped `TodoItem` in `React.memo` and moved `formatTodoText` into a `useCallback` with a stable reference. → **Why:** `React.memo` only pays off if the props it receives are referentially stable; an inline function prop would have defeated it.
+- **Problem:** the username validity check in `Profile` re-ran on every render, even when the username hadn't changed. → **Solution:** derived `isUsernameValid` with `useMemo` keyed on `username`. → **Why:** the check is pure and only needs to run when its input changes.
+- **Problem:** the confetti animation and the profile icon list were bundled into the initial JS payload even though most users never open them. → **Solution:** loaded `Confetti` via `React.lazy` + `Suspense`, and the icon options via a dynamic `import()` inside a `useEffect`. → **Why:** code-splitting rarely-used, non-critical UI keeps the initial bundle smaller and the first render faster.
+- **Problem:** todo list updates involved several related pieces of state (add/update/delete) that are easy to get out of sync with separate `useState` calls. → **Solution:** consolidated them into a single `useReducer`. → **Why:** a reducer keeps the transitions explicit and testable, and pairs naturally with `React.memo`'s reliance on stable `dispatch`.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+---
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## 🚀 How to run it
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```bash
+git clone https://github.com/Carlou134/optimize-this-react-codeacademy.git
+cd optimize-this-react-codeacademy
+pnpm install
+pnpm start
+```
 
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Other available scripts: `pnpm test` and `pnpm build`.
